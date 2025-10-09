@@ -1,10 +1,10 @@
 # ========================================
-# Multi-stage Dockerfile for .NET 6 Backend
+# Multi-stage Dockerfile for .NET 8 Backend
 # Target: Linux containers (AMD64/ARM64)
 # ========================================
 
 # Build stage
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
@@ -22,7 +22,7 @@ FROM build AS publish
 RUN dotnet publish "SentimentAnalyzer.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage - Linux only
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
 # Install dependencies for .NET globalization and healthchecks
