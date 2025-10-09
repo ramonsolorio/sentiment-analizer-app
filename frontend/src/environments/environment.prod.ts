@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:5000/api' // Backend API URL when running in Docker
+  apiUrl: 'https://sentiment-analyzer-backend-aca.braveflower-b755a572.centralus.azurecontainerapps.io/api'
 };
