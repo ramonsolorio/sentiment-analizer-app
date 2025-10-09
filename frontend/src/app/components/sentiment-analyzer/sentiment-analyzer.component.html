@@ -1,11 +1,148 @@
-<div class="sentiment-analyzer">
-  <h2>Sentiment Analyzer</h2>
-  <textarea [(ngModel)]="userInput" placeholder="Enter text here..." rows="4" cols="50"></textarea>
-  <button (click)="analyzeSentiment()">Analyze Sentiment</button>
-  
-  <div *ngIf="sentimentResponse" class="result">
-    <h3>Sentiment Analysis Result:</h3>
-    <p><strong>Sentiment:</strong> {{ sentimentResponse.sentiment }}</p>
-    <p><strong>Score:</strong> {{ sentimentResponse.score }}</p>
+<div class="app-container">
+  <!-- Left Panel - Gradient Background -->
+  <div class="left-panel">
+    <div class="left-panel-content">
+      <div class="logo-section">
+        <i class="bi bi-stars"></i>
+      </div>
+      <h1 class="welcome-title">Sentiment Analyzer</h1>
+      <p class="welcome-subtitle">Powered by Azure OpenAI</p>
+      <p class="welcome-description">
+        Discover the emotion and tone behind any text using advanced AI technology.
+      </p>
+<!--       
+      <div class="features-list">
+        <div class="feature-item">
+          <i class="bi bi-lightning-charge-fill"></i>
+          <span>Instant Analysis</span>
+        </div>
+        <div class="feature-item">
+          <i class="bi bi-shield-check"></i>
+          <span>GPT-4 Powered</span>
+        </div>
+        <div class="feature-item">
+          <i class="bi bi-globe"></i>
+          <span>Multi-language Support</span>
+        </div>
+      </div> -->
+    </div>
+  </div>
+
+  <!-- Right Panel - White Background -->
+  <div class="right-panel">
+    <div class="right-panel-content">
+      
+      <!-- Header -->
+      <div class="panel-header">
+        <h2>Analyze Text Sentiment</h2>
+        <p class="text-muted">Enter your text below and get instant sentiment analysis</p>
+      </div>
+
+      <!-- Input Form -->
+      <div class="form-section">
+        <div class="form-group">
+          <label for="textInput" class="form-label">
+            <i class="bi bi-pencil-square me-2"></i>
+            Your Text
+          </label>
+          <textarea 
+            id="textInput"
+            class="form-control custom-input" 
+            [(ngModel)]="userInput" 
+            placeholder="Type or paste your text here... (e.g., 'I absolutely love this product!', 'This is very disappointing.', 'The service was okay.')"
+            rows="8"
+            maxlength="2000"></textarea>
+          <div class="char-counter">
+            <small class="text-muted">{{ userInput?.length || 0 }} / 2000 characters</small>
+          </div>
+        </div>
+
+        <!-- Analyze Button -->
+        <button 
+          class="btn-analyze w-100" 
+          (click)="analyzeSentiment()"
+          [disabled]="!userInput || userInput.trim().length === 0 || isLoading">
+          <span *ngIf="!isLoading">
+            <i class="bi bi-magic me-2"></i>
+            Analyze Sentiment
+          </span>
+          <span *ngIf="isLoading">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Analyzing...
+          </span>
+        </button>
+      </div>
+
+      <!-- Results Section -->
+      <div *ngIf="sentimentResponse && !isLoading" class="results-section animate-slide-up">
+        <div class="results-header">
+          <i class="bi bi-graph-up-arrow me-2"></i>
+          <h3>Analysis Results</h3>
+        </div>
+
+        <div class="results-grid">
+          <!-- Sentiment Card -->
+          <div class="result-card sentiment-card"
+               [ngClass]="{
+                 'sentiment-positive': sentimentResponse.sentiment?.toLowerCase().includes('positive'),
+                 'sentiment-negative': sentimentResponse.sentiment?.toLowerCase().includes('negative'),
+                 'sentiment-neutral': sentimentResponse.sentiment?.toLowerCase().includes('neutral')
+               }">
+            <div class="result-icon">
+              <i class="bi"
+                 [ngClass]="{
+                   'bi-emoji-smile-fill': sentimentResponse.sentiment?.toLowerCase().includes('positive'),
+                   'bi-emoji-frown-fill': sentimentResponse.sentiment?.toLowerCase().includes('negative'),
+                   'bi-emoji-neutral-fill': sentimentResponse.sentiment?.toLowerCase().includes('neutral')
+                 }"></i>
+            </div>
+            <div class="result-value">{{ sentimentResponse.sentiment }}</div>
+            <div class="result-label">Sentiment</div>
+          </div>
+
+          <!-- Confidence Score Card -->
+          <div class="result-card score-card">
+            <div class="result-icon">
+              <i class="bi bi-speedometer2"></i>
+            </div>
+            <div class="result-value">{{ (sentimentResponse.score * 100) | number:'1.0-0' }}%</div>
+            <div class="result-label">Confidence</div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill" 
+                   [style.width.%]="(sentimentResponse.score || 0) * 100"
+                   [ngClass]="{
+                     'bar-positive': sentimentResponse.sentiment?.toLowerCase().includes('positive'),
+                     'bar-negative': sentimentResponse.sentiment?.toLowerCase().includes('negative'),
+                     'bar-neutral': sentimentResponse.sentiment?.toLowerCase().includes('neutral')
+                   }">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message Alert -->
+        <div class="alert-message" *ngIf="sentimentResponse.message">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          {{ sentimentResponse.message }}
+        </div>
+      </div>
+
+      <!-- Examples Section -->
+      <div class="examples-section" *ngIf="!sentimentResponse">
+        <p class="examples-title">Try these examples:</p>
+        <div class="example-chips">
+          <button class="chip" (click)="userInput = 'I absolutely love this product! It exceeded all my expectations!'">
+            <i class="bi bi-emoji-smile"></i> Positive Example
+          </button>
+          <button class="chip" (click)="userInput = 'This is really disappointing. I expected much better quality.'">
+            <i class="bi bi-emoji-frown"></i> Negative Example
+          </button>
+          <button class="chip" (click)="userInput = 'The service was okay, nothing special but acceptable.'">
+            <i class="bi bi-emoji-neutral"></i> Neutral Example
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
