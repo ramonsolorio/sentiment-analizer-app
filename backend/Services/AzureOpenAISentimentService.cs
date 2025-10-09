@@ -5,42 +5,37 @@ using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using SentimentAnalyzerApp.Models;
-using SentimentAnalyzerApp.Services;
+using OpenAI.Chat;
 
 namespace SentimentAnalyzerApp.Services
 {
     public class AzureOpenAISentimentService : ISentimentService
     {
-        private readonly AzureOpenAIClient _azureClient;
-        private readonly string _deploymentName;
+        private readonly ChatClient _chatClient;
 
         public AzureOpenAISentimentService(string endpoint, string deploymentName)
         {
             var credential = new DefaultAzureCredential();
-            _azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
-            _deploymentName = deploymentName;
+            var azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+            _chatClient = azureClient.GetChatClient(deploymentName);
         }
 
         public async Task<SentimentResponse> AnalyzeSentimentAsync(SentimentRequest request)
         {
-            var chatCompletionsOptions = new ChatCompletionsOptions
+            var messages = new List<ChatMessage>
             {
-                DeploymentName = _deploymentName,
-                Messages =
-                {
-                    new ChatRequestSystemMessage("You are a sentiment analysis assistant. Analyze the sentiment of the given text and respond with only one word: Positive, Negative, or Neutral."),
-                    new ChatRequestUserMessage(request.Text)
-                },
-                MaxTokens = 60,
-                Temperature = 0.5f
+                new SystemChatMessage("You are a sentiment analysis assistant. Analyze the sentiment of the given text and respond with only one word: Positive, Negative, or Neutral."),
+                new UserChatMessage(request.Text)
             };
 
-            Response<ChatCompletions> response = await _azureClient.GetChatCompletionsAsync(chatCompletionsOptions);
-            var sentiment = response.Value.Choices[0].Message.Content.Trim();
+            var completion = await _chatClient.CompleteChatAsync(messages);
+            var sentiment = completion.Value.Content[0].Text.Trim();
 
             return new SentimentResponse
             {
-                Sentiment = sentiment
+                Sentiment = sentiment,
+                Score = 1.0,
+                Message = "Analysis completed successfully"
             };
         }
     }

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
-using YourNamespace.Models; // Update with your actual namespace
-using YourNamespace.Services; // Update with your actual namespace
+using SentimentAnalyzerApp.Models;
+using SentimentAnalyzerApp.Services;
 
-namespace YourNamespace.Controllers // Update with your actual namespace
+namespace SentimentAnalyzerApp.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -24,7 +24,7 @@ namespace YourNamespace.Controllers // Update with your actual namespace
                 return BadRequest("Invalid request.");
             }
 
-            var response = await _sentimentService.AnalyzeSentimentAsync(request.Text);
+            var response = await _sentimentService.AnalyzeSentimentAsync(request);
             return Ok(response);
         }
     }

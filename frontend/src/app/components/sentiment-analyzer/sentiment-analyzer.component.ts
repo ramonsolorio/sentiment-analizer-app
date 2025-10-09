@@ -1,6 +1,15 @@
+import { Component } from '@angular/core';
+import { SentimentService } from '../../services/sentiment.service';
+import { SentimentResponse } from '../../models/sentiment-response.model';
+
+@Component({
+  selector: 'app-sentiment-analyzer',
+  templateUrl: './sentiment-analyzer.component.html',
+  styleUrls: ['./sentiment-analyzer.component.css']
+})
 export class SentimentAnalyzerComponent {
   userInput: string = '';
-  sentimentResult: string | null = null;
+  sentimentResponse: SentimentResponse | null = null;
 
   constructor(private sentimentService: SentimentService) {}
 
@@ -8,15 +17,13 @@ export class SentimentAnalyzerComponent {
     if (this.userInput.trim()) {
       this.sentimentService.analyzeSentiment(this.userInput).subscribe(
         (response) => {
-          this.sentimentResult = response.sentiment;
+          this.sentimentResponse = response;
         },
         (error) => {
           console.error('Error analyzing sentiment:', error);
-          this.sentimentResult = 'Error analyzing sentiment. Please try again.';
+          this.sentimentResponse = null;
         }
       );
-    } else {
-      this.sentimentResult = 'Please enter some text to analyze.';
     }
   }
 }

@@ -5,6 +5,6 @@ namespace SentimentAnalyzerApp.Models
     public class SentimentRequest
     {
         [Required]
-        public string Text { get; set; }
+        public string Text { get; set; } = string.Empty;
     }
 }
