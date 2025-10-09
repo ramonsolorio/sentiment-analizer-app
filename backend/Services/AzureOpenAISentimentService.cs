@@ -15,9 +15,38 @@ namespace SentimentAnalyzerApp.Services
 
         public AzureOpenAISentimentService(string endpoint, string deploymentName)
         {
-            var credential = new DefaultAzureCredential();
-            var azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
-            _chatClient = azureClient.GetChatClient(deploymentName);
+            try
+            {
+                Console.WriteLine($"Initializing Azure OpenAI client...");
+                Console.WriteLine($"Endpoint: {endpoint}");
+                Console.WriteLine($"Deployment: {deploymentName}");
+
+                // Try different authentication methods in order
+                // var credentialOptions = new DefaultAzureCredentialOptions
+                // {
+                //     ExcludeEnvironmentCredential = false,
+                //     ExcludeWorkloadIdentityCredential = true,
+                //     ExcludeManagedIdentityCredential = true,
+                //     ExcludeSharedTokenCacheCredential = false,
+                //     ExcludeVisualStudioCredential = true,
+                //     ExcludeVisualStudioCodeCredential = true,
+                //     ExcludeAzureCliCredential = false,
+                //     ExcludeAzurePowerShellCredential = false,
+                //     ExcludeInteractiveBrowserCredential = true
+                // };
+
+                var credential = new DefaultAzureCredential();
+                var azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+                _chatClient = azureClient.GetChatClient(deploymentName);
+                
+                Console.WriteLine("Azure OpenAI client initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing Azure OpenAI client: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<SentimentResponse> AnalyzeSentimentAsync(SentimentRequest request)

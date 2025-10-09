@@ -38,10 +38,17 @@ builder.Services.AddSingleton<ISentimentService>(sp =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+// IMPORTANT: CORS must be before Authorization
 app.UseCors("AllowAll");
+
+app.UseRouting();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
+Console.WriteLine($"Backend starting...");
+Console.WriteLine($"Azure OpenAI Endpoint: {azureOpenAIEndpoint}");
+Console.WriteLine($"Azure OpenAI Deployment: {azureOpenAIDeployment}");
 
 app.Run();
