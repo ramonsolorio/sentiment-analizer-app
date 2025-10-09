@@ -1,23 +1,36 @@
-# Ignore files and directories that are not needed for the Docker image
+# Build artifacts
 bin/
 obj/
+
+# User-specific files
 *.csproj.user
-*.sln
-*.suo
 *.user
-*.vs/
-*.vscode/
-*.db
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE folders
+.vs/
+.vscode/
+.idea/
+
+# Logs and databases
 *.log
-*.md
-*.json
-*.xml
-*.yml
-*.yaml
-Dockerfile
-.dockerignore
+*.db
+*.db-shm
+*.db-wal
+
+# Documentation (keep appsettings.json for production config)
 README.md
-appsettings.Development.json
-appsettings.json
-**/*.csproj
-**/*.sln
+DOCKER.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+
+# Don't ignore appsettings - we need them!
+# Don't ignore .csproj - we need them!

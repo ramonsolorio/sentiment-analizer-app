@@ -1,18 +1,23 @@
-version: '3.8'
+# Docker Compose configuration for Sentiment Analyzer
+# Target: Linux containers
 
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    image: sentiment-analyzer-backend:latest
     container_name: sentiment-analyzer-backend
+    platform: linux/amd64
     ports:
       - "5000:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
-      # Optional: If using Service Principal authentication
+      # Optional: Service Principal authentication
       - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
@@ -30,20 +35,25 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    image: sentiment-analyzer-frontend:latest
     container_name: sentiment-analyzer-frontend
+    platform: linux/amd64
     ports:
       - "4200:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - sentiment-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 30s
 
 networks:
   sentiment-network:

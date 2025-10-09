@@ -10,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddNewtonsoftJson();
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 // Configure CORS
 builder.Services.AddCors(options =>
 {
@@ -44,6 +47,9 @@ app.UseCors("AllowAll");
 app.UseRouting();
 
 app.UseAuthorization();
+
+// Map health check endpoint
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 
