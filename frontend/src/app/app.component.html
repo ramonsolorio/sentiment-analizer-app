@@ -1,0 +1,11 @@
+<div class="container">
+  <h1>Sentiment Analyzer</h1>
+  <div class="input-section">
+    <textarea [(ngModel)]="userInput" placeholder="Enter text here..." rows="4"></textarea>
+    <button (click)="analyzeSentiment()">Analyze Sentiment</button>
+  </div>
+  <div class="result-section" *ngIf="sentimentResult">
+    <h2>Sentiment Analysis Result:</h2>
+    <p>{{ sentimentResult }}</p>
+  </div>
+</div>

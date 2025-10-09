@@ -1,0 +1,23 @@
+# Ignore files and directories that are not needed for the Docker image
+bin/
+obj/
+*.csproj.user
+*.sln
+*.suo
+*.user
+*.vs/
+*.vscode/
+*.db
+*.log
+*.md
+*.json
+*.xml
+*.yml
+*.yaml
+Dockerfile
+.dockerignore
+README.md
+appsettings.Development.json
+appsettings.json
+**/*.csproj
+**/*.sln
