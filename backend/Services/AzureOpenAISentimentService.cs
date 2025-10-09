@@ -1,41 +1,47 @@
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using Azure;
+using Azure.AI.OpenAI;
+using Azure.Identity;
+using SentimentAnalyzerApp.Models;
+using SentimentAnalyzerApp.Services;
 
-public class AzureOpenAISentimentService : ISentimentService
+namespace SentimentAnalyzerApp.Services
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _endpoint;
-    private readonly string _apiKey;
-
-    public AzureOpenAISentimentService(HttpClient httpClient, string endpoint, string apiKey)
+    public class AzureOpenAISentimentService : ISentimentService
     {
-        _httpClient = httpClient;
-        _endpoint = endpoint;
-        _apiKey = apiKey;
-    }
+        private readonly AzureOpenAIClient _azureClient;
+        private readonly string _deploymentName;
 
-    public async Task<SentimentResponse> AnalyzeSentimentAsync(SentimentRequest request)
-    {
-        var requestBody = new
+        public AzureOpenAISentimentService(string endpoint, string deploymentName)
         {
-            prompt = request.Text,
-            max_tokens = 60,
-            temperature = 0.5
-        };
+            var credential = new DefaultAzureCredential();
+            _azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+            _deploymentName = deploymentName;
+        }
 
-        var jsonRequestBody = JsonConvert.SerializeObject(requestBody);
-        var httpContent = new StringContent(jsonRequestBody, Encoding.UTF8, "application/json");
-        httpContent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+        public async Task<SentimentResponse> AnalyzeSentimentAsync(SentimentRequest request)
+        {
+            var chatCompletionsOptions = new ChatCompletionsOptions
+            {
+                DeploymentName = _deploymentName,
+                Messages =
+                {
+                    new ChatRequestSystemMessage("You are a sentiment analysis assistant. Analyze the sentiment of the given text and respond with only one word: Positive, Negative, or Neutral."),
+                    new ChatRequestUserMessage(request.Text)
+                },
+                MaxTokens = 60,
+                Temperature = 0.5f
+            };
 
-        var response = await _httpClient.PostAsync(_endpoint, httpContent);
-        response.EnsureSuccessStatusCode();
+            Response<ChatCompletions> response = await _azureClient.GetChatCompletionsAsync(chatCompletionsOptions);
+            var sentiment = response.Value.Choices[0].Message.Content.Trim();
 
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        var sentimentResponse = JsonConvert.DeserializeObject<SentimentResponse>(jsonResponse);
-
-        return sentimentResponse;
+            return new SentimentResponse
+            {
+                Sentiment = sentiment
+            };
+        }
     }
 }
