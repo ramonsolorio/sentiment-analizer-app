@@ -38,14 +38,20 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built application from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Create non-root user (using GID/UID 1001 to avoid conflicts)
+# Create non-root user and setup directories with proper permissions for ACA
 RUN addgroup -g 1001 nginx-user && \
     adduser -D -u 1001 -G nginx-user nginx-user && \
+    # Create temp directories that nginx needs
+    mkdir -p /tmp/client_temp /tmp/proxy_temp_path /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && \
+    # Set ownership of all necessary directories
     chown -R nginx-user:nginx-user /usr/share/nginx/html && \
     chown -R nginx-user:nginx-user /var/cache/nginx && \
-    chown -R nginx-user:nginx-user /var/log/nginx && \
-    touch /var/run/nginx.pid && \
-    chown nginx-user:nginx-user /var/run/nginx.pid
+    chown -R nginx-user:nginx-user /etc/nginx && \
+    chown -R nginx-user:nginx-user /tmp && \
+    # Create PID directory
+    mkdir -p /tmp && \
+    # Make sure nginx config is readable
+    chmod -R 755 /etc/nginx
 
 USER nginx-user
 
