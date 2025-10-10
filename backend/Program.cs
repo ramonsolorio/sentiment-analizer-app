@@ -6,6 +6,13 @@ using SentimentAnalyzerApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Application Insights telemetry
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    options.ConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING") 
+        ?? builder.Configuration["ApplicationInsights:ConnectionString"];
+});
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddNewtonsoftJson();
@@ -37,6 +44,9 @@ var azureOpenAIDeployment = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEP
 // Register the sentiment service
 builder.Services.AddSingleton<ISentimentService>(sp => 
     new AzureOpenAISentimentService(azureOpenAIEndpoint, azureOpenAIDeployment));
+
+// Register telemetry service
+builder.Services.AddSingleton<ITelemetryService, ApplicationInsightsTelemetryService>();
 
 var app = builder.Build();
 

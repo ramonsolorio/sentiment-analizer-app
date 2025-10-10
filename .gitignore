@@ -30,6 +30,5 @@ yarn-error.log*
 
 # Docker
 docker-compose.override.yml
-/backend/obj/SentimentAnalyzer.csproj.nuget.dgspec.json
-/backend/obj/project.assets.json
-/backend/obj/project.nuget.cache
+/backend/obj/*
+/backend/bin/*
