@@ -21,20 +21,6 @@ namespace SentimentAnalyzerApp.Services
                 Console.WriteLine($"Endpoint: {endpoint}");
                 Console.WriteLine($"Deployment: {deploymentName}");
 
-                // Try different authentication methods in order
-                // var credentialOptions = new DefaultAzureCredentialOptions
-                // {
-                //     ExcludeEnvironmentCredential = false,
-                //     ExcludeWorkloadIdentityCredential = true,
-                //     ExcludeManagedIdentityCredential = true,
-                //     ExcludeSharedTokenCacheCredential = false,
-                //     ExcludeVisualStudioCredential = true,
-                //     ExcludeVisualStudioCodeCredential = true,
-                //     ExcludeAzureCliCredential = false,
-                //     ExcludeAzurePowerShellCredential = false,
-                //     ExcludeInteractiveBrowserCredential = true
-                // };
-
                 var credential = new DefaultAzureCredential();
                 var azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
                 _chatClient = azureClient.GetChatClient(deploymentName);

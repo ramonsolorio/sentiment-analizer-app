@@ -35,11 +35,12 @@ builder.Services.AddCors(options =>
 // Get Azure OpenAI configuration from environment variables or appsettings
 var azureOpenAIEndpoint = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT") 
     ?? builder.Configuration["AzureOpenAI:Endpoint"] 
-    ?? "https://eus2-devia-openia-2w36.openai.azure.com/";
+    ?? throw new InvalidOperationException("AZURE_OPENAI_ENDPOINT is required");
 
 var azureOpenAIDeployment = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT") 
+    ?? Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT_NAME")
     ?? builder.Configuration["AzureOpenAI:DeploymentName"] 
-    ?? "gpt-4.1";
+    ?? throw new InvalidOperationException("AZURE_OPENAI_DEPLOYMENT or AZURE_OPENAI_DEPLOYMENT_NAME is required");
 
 // Register the sentiment service
 builder.Services.AddSingleton<ISentimentService>(sp => 
