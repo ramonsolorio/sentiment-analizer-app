@@ -20,31 +20,31 @@ Este documento describe la arquitectura completa del sistema de análisis de sen
 ```mermaid
 graph TB
     subgraph "Usuario Final"
-        USER[👤 Usuario<br/>Navegador Web]
+        USER["👤 Usuario<br/>Navegador Web"]
     end
 
     subgraph "Azure Container Apps Environment"
         subgraph "Frontend Container App"
-            FRONTEND[🌐 Angular 12 Frontend<br/>Port 8080<br/>Nginx Alpine<br/>academosampl1]
+            FRONTEND["🌐 Angular 12 Frontend<br/>Port 8080<br/>Nginx Alpine<br/>academosampl1"]
         end
         
         subgraph "Backend Container App - Auto-Scaling"
-            BACKEND1[⚙️ .NET 8 API<br/>Instance 1<br/>Port 8080]
-            BACKEND2[⚙️ .NET 8 API<br/>Instance 2<br/>Port 8080]
-            BACKEND3[⚙️ .NET 8 API<br/>Instance N<br/>Port 8080]
-            SCALER[📊 HTTP Scaler<br/>Min: 1, Max: 10<br/>Concurrent Requests: 5]
+            BACKEND1["⚙️ .NET 8 API<br/>Instance 1<br/>Port 8080"]
+            BACKEND2["⚙️ .NET 8 API<br/>Instance 2<br/>Port 8080"]
+            BACKEND3["⚙️ .NET 8 API<br/>Instance N<br/>Port 8080"]
+            SCALER["📊 HTTP Scaler<br/>Min: 1, Max: 10<br/>Concurrent Requests: 5"]
         end
     end
 
     subgraph "Azure Services"
-        ACR[🐳 Azure Container Registry<br/>acrdemoaca.azurecr.io<br/>- Frontend: v1.0.3<br/>- Backend: v1.1.0]
-        OPENAI[🤖 Azure OpenAI Service<br/>&lt;tu-recurso&gt;.openai.azure.com<br/>Model: GPT-4]
-        APPINSIGHTS[📈 Application Insights<br/>appinsights-sentiment-analyzer<br/>Telemetría + Métricas]
-        LOGANALYTICS[📝 Log Analytics Workspace<br/>Logs centralizados]
+        ACR["🐳 Azure Container Registry<br/>acrdemoaca.azurecr.io<br/>- Frontend: v1.0.3<br/>- Backend: v1.1.0"]
+        OPENAI["🤖 Azure OpenAI Service<br/>(tu-recurso).openai.azure.com<br/>Model: GPT-4"]
+        APPINSIGHTS["📈 Application Insights<br/>appinsights-sentiment-analyzer<br/>Telemetría + Métricas"]
+        LOGANALYTICS["📝 Log Analytics Workspace<br/>Logs centralizados"]
     end
 
     subgraph "Authentication & Identity"
-        AZUREAD[🔐 Azure AD / Entra ID<br/>DefaultAzureCredential<br/>Azure CLI Login]
+        AZUREAD["🔐 Azure AD / Entra ID<br/>DefaultAzureCredential<br/>Azure CLI Login"]
     end
 
     USER -->|HTTPS Request| FRONTEND
@@ -171,25 +171,25 @@ graph TD
 graph LR
     subgraph "Resource Group: ACA-DEMO-RG"
         subgraph "Compute"
-            ACA_ENV[🏢 ACA Managed Environment<br/>managedEnvironment-ACADEMORG-9062<br/>Region: Central US]
+            ACA_ENV["🏢 ACA Managed Environment<br/>managedEnvironment-ACADEMORG-9062<br/>Region: Central US"]
             
-            ACA_FRONT[📱 Frontend Container App<br/>academosampl1<br/>Image: v1.0.3<br/>Replicas: 1<br/>CPU: 0.5, RAM: 1Gi]
+            ACA_FRONT["📱 Frontend Container App<br/>academosampl1<br/>Image: v1.0.3<br/>Replicas: 1<br/>CPU: 0.5, RAM: 1Gi"]
             
-            ACA_BACK[🔧 Backend Container App<br/>sentiment-analyzer-backend-aca<br/>Image: v1.1.0<br/>Replicas: 1-10 (auto-scale)<br/>CPU: 0.5, RAM: 1Gi]
+            ACA_BACK["🔧 Backend Container App<br/>sentiment-analyzer-backend-aca<br/>Image: v1.1.0<br/>Replicas: 1-10 auto-scale<br/>CPU: 0.5, RAM: 1Gi"]
         end
         
         subgraph "Container Registry"
-            ACR[🐳 Azure Container Registry<br/>acrdemoaca<br/>SKU: Standard<br/>Images:<br/>- frontend: latest, v1.0.3<br/>- backend: latest, v1.1.0]
+            ACR["🐳 Azure Container Registry<br/>acrdemoaca<br/>SKU: Standard<br/>Images:<br/>- frontend: latest, v1.0.3<br/>- backend: latest, v1.1.0"]
         end
         
         subgraph "Monitoring & Observability"
-            APPINS[📊 Application Insights<br/>appinsights-sentiment-analyzer<br/>Retention: 30 days<br/>Custom Metrics:<br/>- NegativeSentimentCount<br/>- Sentiment_Positive/Negative<br/>- HTTP Request Rate]
+            APPINS["📊 Application Insights<br/>appinsights-sentiment-analyzer<br/>Retention: 30 days<br/>Custom Metrics:<br/>- NegativeSentimentCount<br/>- Sentiment_Positive/Negative<br/>- HTTP Request Rate"]
             
-            LOGWORK[📝 Log Analytics Workspace<br/>Linked to App Insights<br/>Query Language: KQL]
+            LOGWORK["📝 Log Analytics Workspace<br/>Linked to App Insights<br/>Query Language: KQL"]
         end
         
         subgraph "AI Services"
-            AOAI[🤖 Azure OpenAI<br/>&lt;tu-recurso&gt;.openai.azure.com<br/>Deployment: gpt-4<br/>Model: GPT-4<br/>Auth: Azure AD]
+            AOAI["🤖 Azure OpenAI<br/>(tu-recurso).openai.azure.com<br/>Deployment: gpt-4<br/>Model: GPT-4<br/>Auth: Azure AD"]
         end
     end
     
