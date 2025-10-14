@@ -1,10 +1,10 @@
 # ========================================
 # Multi-stage Dockerfile for Angular Frontend
-# Target: Linux containers (AMD64/ARM64)
+# Target: Linux containers (AMD64)
 # ========================================
 
 # Build stage
-FROM --platform=$BUILDPLATFORM node:18-alpine AS build
+FROM node:18-alpine AS build
 
 # Set Node.js options to use legacy OpenSSL provider (fix for webpack with Node 18)
 ENV NODE_OPTIONS=--openssl-legacy-provider

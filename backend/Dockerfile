@@ -1,10 +1,10 @@
 # ========================================
 # Multi-stage Dockerfile for .NET 8 Backend
-# Target: Linux containers (AMD64/ARM64)
+# Target: Linux containers (AMD64)
 # ========================================
 
 # Build stage
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
