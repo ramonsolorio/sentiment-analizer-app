@@ -32,12 +32,6 @@ namespace SentimentAnalyzerApp.Services
                 // Enviar métrica personalizada para el sentimiento
                 _telemetryClient.GetMetric($"Sentiment_{sentimentResponse.Sentiment}").TrackValue(1);
 
-                // Si es negativo, enviar métrica específica para escalado
-                if (sentimentResponse.Sentiment.Equals("Negative", StringComparison.OrdinalIgnoreCase))
-                {
-                    TrackNegativeSentiment(sentimentResponse.Message, sentimentResponse.Score);
-                }
-
                 _logger.LogInformation(
                     "Sentiment tracked: {Sentiment} with score {Score}",
                     sentimentResponse.Sentiment,
@@ -49,31 +43,5 @@ namespace SentimentAnalyzerApp.Services
             }
         }
 
-        public void TrackNegativeSentiment(string text, double score)
-        {
-            try
-            {
-                // Métrica crítica para escalado automático
-                // Esta métrica se usa en la regla de escalado de ACA
-                _telemetryClient.GetMetric("NegativeSentimentCount").TrackValue(1);
-
-                // Enviar evento de alta prioridad
-                var eventTelemetry = new EventTelemetry("NegativeSentimentDetected");
-                eventTelemetry.Properties.Add("Text", text);
-                eventTelemetry.Properties.Add("Severity", score > 0.8 ? "High" : "Medium");
-                eventTelemetry.Metrics.Add("NegativeScore", score);
-
-                _telemetryClient.TrackEvent(eventTelemetry);
-
-                _logger.LogWarning(
-                    "Negative sentiment detected with score {Score}. Text: {Text}",
-                    score,
-                    text.Length > 100 ? text.Substring(0, 100) + "..." : text);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error tracking negative sentiment");
-            }
-        }
     }
 }

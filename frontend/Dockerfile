@@ -1,21 +1,22 @@
 # ========================================
 # Multi-stage Dockerfile for Angular Frontend
 # Target: Linux containers (AMD64)
+# Optimized for Angular 12 with Node 16
 # ========================================
 
-# Build stage
-FROM node:18-alpine AS build
+# Build stage - Use Node 16 for better Angular 12 compatibility
+FROM node:16-alpine AS build
 
-# Set Node.js options to use legacy OpenSSL provider (fix for webpack with Node 18)
-ENV NODE_OPTIONS=--openssl-legacy-provider
+# Node 16 doesn't need --openssl-legacy-provider (only required for Node 17+)
+# ENV NODE_OPTIONS=--openssl-legacy-provider
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps support
-RUN npm ci --legacy-peer-deps --only=production=false
+# Install dependencies - removed invalid --only flag
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
