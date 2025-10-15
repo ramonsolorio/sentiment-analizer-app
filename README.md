@@ -1,13 +1,13 @@
 # Sentiment Analyzer App
 
 ## 📖 Overview
-Aplicación web cloud-native de análisis de sentimientos que utiliza **Azure OpenAI (GPT-4.1)** para analizar el tono emocional de textos. Desplegada en **Azure Container Apps** con escalado automático **basado en eventos de sentimientos negativos** usando **KEDA y Log Analytics**.
+Aplicación web cloud-native de análisis de sentimientos que utiliza **Azure OpenAI (GPT-4o)** para analizar el tono emocional de textos. Desplegada en **Azure Container Apps** con escalado automático **basado en eventos de sentimientos negativos** usando **KEDA y Log Analytics**.
 
 ## 🏗️ Arquitectura
 
 - **Frontend**: Angular 12 + TypeScript + Nginx Alpine
 - **Backend**: ASP.NET Core 8 Web API + C#
-- **IA**: Azure OpenAI Service (GPT-4.1)
+- **IA**: Azure OpenAI Service (GPT-4o)
 - **Hosting**: Azure Container Apps (ACA) con auto-scaling basado en eventos
 - **Observabilidad**: Application Insights + Log Analytics
 - **Auto-scaling**: KEDA con Log Analytics Scaler (event-driven)
@@ -259,7 +259,7 @@ sentiment-analyzer-app/
 | Variable | Descripción | Ejemplo/Valor |
 |----------|-------------|---------------|
 | `AZURE_OPENAI_ENDPOINT` | Endpoint del recurso Azure OpenAI | `https://<tu-recurso>.openai.azure.com/` |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | Nombre del deployment del modelo | `gpt-4` o `gpt-4.1` |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | Nombre del deployment del modelo | `gpt-4` o `gpt-4o` |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Connection string de Application Insights | `InstrumentationKey=<key>;IngestionEndpoint=https://...` |
 | `ASPNETCORE_ENVIRONMENT` | Entorno de ejecución | `Development` (local) / `Production` (Azure) |
 | `ASPNETCORE_HTTP_PORTS` | Puerto HTTP dentro del contenedor | `8080` |
