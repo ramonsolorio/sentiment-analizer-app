@@ -1,15 +1,16 @@
 # Sentiment Analyzer App
 
 ## 📖 Overview
-Aplicación web cloud-native de análisis de sentimientos que utiliza **Azure OpenAI (GPT-4.1)** para analizar el tono emocional de textos. Desplegada en **Azure Container Apps** con escalado automático basado en telemetría de **Application Insights**.
+Aplicación web cloud-native de análisis de sentimientos que utiliza **Azure OpenAI (GPT-4.1)** para analizar el tono emocional de textos. Desplegada en **Azure Container Apps** con escalado automático **basado en eventos de sentimientos negativos** usando **KEDA y Log Analytics**.
 
 ## 🏗️ Arquitectura
 
 - **Frontend**: Angular 12 + TypeScript + Nginx Alpine
 - **Backend**: ASP.NET Core 8 Web API + C#
 - **IA**: Azure OpenAI Service (GPT-4.1)
-- **Hosting**: Azure Container Apps (ACA) con auto-scaling
+- **Hosting**: Azure Container Apps (ACA) con auto-scaling basado en eventos
 - **Observabilidad**: Application Insights + Log Analytics
+- **Auto-scaling**: KEDA con Log Analytics Scaler (event-driven)
 - **Container Registry**: Azure Container Registry (ACR)
 - **Autenticación**: Azure DefaultAzureCredential (Azure CLI, Managed Identity, Service Principal)
 - **Containerización**: Docker multi-stage builds + Linux Alpine
@@ -24,7 +25,11 @@ Para ver los diagramas detallados de la arquitectura, flujos de datos, y compone
 Usuario → Frontend (ACA) → Backend (ACA) → Azure OpenAI
                               ↓
                     Application Insights
-                    (Métricas + Auto-scaling)
+                              ↓
+                    Log Analytics Workspace
+                              ↓
+                    KEDA Log Analytics Scaler
+                    (Escala cuando negativos ≥ 5)
 ```
 
 ## 📋 Prerrequisitos
@@ -400,15 +405,30 @@ apiUrl: 'https://sentiment-analyzer-backend-aca.redcliff-8b51d058.centralus.azur
 ### 6. El auto-scaling no funciona
 
 **Verificaciones**:
-1. ✅ Regla HTTP configurada en ACA:
+1. ✅ Regla KEDA Log Analytics configurada:
    ```powershell
    az containerapp show --name sentiment-analyzer-backend-aca --resource-group ACA-DEMO-RG --query "properties.template.scale"
    ```
-2. ✅ Generar carga (ver sección "Testing" más abajo)
-3. ✅ Monitorear réplicas:
+2. ✅ Managed Identity tiene permisos de "Log Analytics Reader":
    ```powershell
-   az containerapp revision list --name sentiment-analyzer-backend-aca --resource-group ACA-DEMO-RG --query "[].{Name:name, Replicas:properties.replicas, Active:properties.active}" -o table
+   # Verificar asignaciones de rol
+   $principalId = az containerapp identity show --name sentiment-analyzer-backend-aca --resource-group ACA-DEMO-RG --query principalId -o tsv
+   az role assignment list --assignee $principalId --output table
    ```
+3. ✅ Generar eventos negativos (ver sección "Testing" más abajo)
+4. ✅ Verificar query KQL en Log Analytics:
+   ```kql
+   app("appinsights-sentiment-analyzer").customEvents
+   | where name == "SentimentAnalyzed"
+   | where customDimensions.Sentiment == "Negative"
+   | where timestamp > ago(5m)
+   | count
+   ```
+5. ✅ Monitorear réplicas:
+   ```powershell
+   az containerapp replica list --name sentiment-analyzer-backend-aca --resource-group ACA-DEMO-RG --query "[].{Name:name, Status:properties.runningState, Created:properties.createdTime}" --output table
+   ```
+6. ✅ Ver logs de KEDA (si disponible en ACA logs)
 
 ### 7. Docker: Platform mismatch warnings
 
@@ -540,18 +560,23 @@ az role assignment create \
   --scope /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<openai-name>
 ```
 
-**4. Configurar Auto-Scaling HTTP**:
+**4. Configurar KEDA Auto-Scaling con Log Analytics**:
 
 ```powershell
+# Asignar rol "Log Analytics Reader" al Managed Identity
+az role assignment create \
+  --assignee $principalId \
+  --role "Log Analytics Reader" \
+  --scope /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.OperationalInsights/workspaces/<workspace-name>
+
+# Aplicar configuración YAML de KEDA (ver aca-log-analytics-mi.yaml)
 az containerapp update \
   --name sentiment-analyzer-backend-aca \
   --resource-group <tu-rg> \
-  --min-replicas 1 \
-  --max-replicas 10 \
-  --scale-rule-name http-scaling-rule \
-  --scale-rule-type http \
-  --scale-rule-http-concurrency 5
+  --yaml aca-log-analytics-mi.yaml
 ```
+
+**Configuración de Escalado**: El backend escala automáticamente cuando se detectan **≥ 5 sentimientos negativos en los últimos 5 minutos** mediante queries KQL en Log Analytics. KEDA polling cada 30 segundos.
 
 > 📖 **Para más detalles**, consulta:
 > - [`ACR-DEPLOYMENT.md`](ACR-DEPLOYMENT.md) - Deployment en Container Registry
@@ -611,20 +636,14 @@ Invoke-RestMethod -Uri "$backendUrl/api/sentiment/analyze" `
 
 ### Test de carga para auto-scaling
 
-Usa el script PowerShell incluido `test-load.ps1`:
+Usa el script PowerShell incluido `test-load.ps1` para generar eventos de sentimientos negativos:
 
 ```powershell
-# Test en producción (Azure Container Apps)
-.\test-load.ps1
+# Test en producción (Azure Container Apps) con textos negativos
+.\test-load.ps1 -RequestCount 20
 
-# Test en producción con más peticiones
-.\test-load.ps1 -RequestCount 50
-
-# Test en ambiente local
-.\test-load.ps1 -Local
-
-# Test en ambiente local con URL personalizada
-.\test-load.ps1 -BackendUrl "http://localhost:5079" -RequestCount 30
+# El script envía textos con sentimientos variados
+# Para forzar scaling, necesitas generar ≥5 sentimientos negativos en 5 minutos
 ```
 
 El script:
@@ -637,20 +656,20 @@ El script:
 **Monitorear auto-scaling durante el test**:
 ```powershell
 # Ver réplicas actuales
-az containerapp revision list \
+az containerapp replica list \
   --name sentiment-analyzer-backend-aca \
   --resource-group ACA-DEMO-RG \
-  --query "[].{Name:name, Replicas:properties.replicas, Active:properties.active}" \
-  -o table
+  --query "[].{Name:name, Status:properties.runningState, Created:properties.createdTime}" \
+  --output table
 
-# Ver métricas en tiempo real
-az monitor app-insights metrics show \
-  --app <app-insights-name> \
-  --resource-group <rg> \
-  --metric "customMetrics/NegativeSentimentCount" \
-  --start-time 2024-01-01T00:00:00Z \
-  --end-time 2024-12-31T23:59:59Z \
-  --aggregation Sum
+# Verificar eventos negativos en Log Analytics
+# (Ir a Azure Portal → Log Analytics → Logs)
+app("appinsights-sentiment-analyzer").customEvents
+| where name == "SentimentAnalyzed"
+| where customDimensions.Sentiment == "Negative"
+| where timestamp > ago(10m)
+| summarize Count = count() by bin(timestamp, 1m)
+| render timechart
 ```
 
 ### Probar el frontend
@@ -672,12 +691,23 @@ customMetrics
 | take 100
 ```
 
-**Contar sentimientos negativos por hora**:
+**Contar sentimientos negativos por minuto (para KEDA)**:
 ```kql
-customMetrics
-| where name == "NegativeSentimentCount"
-| summarize NegativeCount = sum(value) by bin(timestamp, 1h)
+app("appinsights-sentiment-analyzer").customEvents
+| where name == "SentimentAnalyzed"
+| where customDimensions.Sentiment == "Negative"
+| where timestamp > ago(5m)
+| summarize Count = count() by bin(timestamp, 1m)
 | order by timestamp desc
+```
+
+**Ver total de eventos negativos en ventana de 5 minutos (query KEDA)**:
+```kql
+app("appinsights-sentiment-analyzer").customEvents
+| where name == "SentimentAnalyzed"
+| where customDimensions.Sentiment == "Negative"
+| where timestamp > ago(5m)
+| count
 ```
 
 **Ver eventos de análisis de sentimiento**:
@@ -696,8 +726,24 @@ customEvents
 customEvents
 | where name == "NegativeSentimentDetected"
 | summarize Count = count() by bin(timestamp, 5m)
-| where Count > 3  // Más de 3 negativos en 5 minutos
+| where Count > 3  // Más de 3 negativos en 5 minutos (activation threshold)
 | order by timestamp desc
+```
+
+**Correlacionar escalado con eventos negativos**:
+```kql
+let negativeEvents = customEvents
+| where name == "SentimentAnalyzed"
+| where customDimensions.Sentiment == "Negative"
+| where timestamp > ago(1h)
+| summarize NegativeCount = count() by bin(timestamp, 1m);
+let requests = requests
+| where timestamp > ago(1h)
+| summarize RequestCount = count() by bin(timestamp, 1m);
+negativeEvents
+| join kind=inner requests on timestamp
+| project timestamp, NegativeCount, RequestCount
+| render timechart
 ```
 
 ### Dashboards recomendados
@@ -705,8 +751,20 @@ customEvents
 Crea un dashboard en Azure Portal con estos widgets:
 1. **Gráfico de líneas**: Sentimientos por tipo (Positive/Negative/Neutral) en las últimas 24 horas
 2. **Métrica**: Cuenta total de `NegativeSentimentCount`
-3. **Gráfico de área**: Réplicas de ACA vs peticiones HTTP concurrentes
+3. **Gráfico de área**: Réplicas de ACA vs eventos de sentimientos negativos en tiempo real
 4. **Tabla**: Últimos 20 eventos `SentimentAnalyzed` con detalles
+5. **KPI**: Umbral de KEDA - muestra si hay ≥5 negativos en 5 minutos (trigger de scaling)
+
+**Query para monitorear threshold de KEDA**:
+```kql
+app("appinsights-sentiment-analyzer").customEvents
+| where name == "SentimentAnalyzed"
+| where customDimensions.Sentiment == "Negative"
+| where timestamp > ago(5m)
+| summarize Count = count()
+| extend Status = iff(Count >= 5, "🔴 SCALING UP", iff(Count >= 3, "🟡 ACTIVATION", "🟢 NORMAL"))
+| project Count, Status
+```
 
 > 📖 **Ver más**: [`APP-INSIGHTS-SCALING.md`](APP-INSIGHTS-SCALING.md) para queries avanzadas y alertas
 
@@ -732,6 +790,7 @@ MIT License - Ver el archivo `LICENSE` para más detalles
 ## 📚 Documentación Adicional
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) - 🏗️ Arquitectura completa con 10+ diagramas Mermaid interactivos
+- [`KEDA-LOG-ANALYTICS-SETUP.md`](KEDA-LOG-ANALYTICS-SETUP.md) - 🔧 Guía completa de configuración de KEDA con Log Analytics
 - [`APP-INSIGHTS-SCALING.md`](APP-INSIGHTS-SCALING.md) - ⚙️ Configuración de auto-scaling con Application Insights
 - [`SCALING-SCENARIOS.md`](SCALING-SCENARIOS.md) - 📈 Escenarios avanzados de escalado
 - [`ACR-DEPLOYMENT.md`](ACR-DEPLOYMENT.md) - 🐳 Deployment en Azure Container Registry
@@ -774,12 +833,14 @@ Si encuentras algún problema:
 
 ## 🎯 Próximos Pasos Recomendados
 
-1. ✅ **Configurar regla HTTP de auto-scaling** (ver [`APP-INSIGHTS-SCALING.md`](APP-INSIGHTS-SCALING.md))
+1. ✅ **Configurar regla KEDA Log Analytics** (ver archivos `aca-log-analytics-*.yaml`)
 2. ✅ **Crear alertas en Azure Monitor** para sentimientos negativos > umbral
 3. ✅ **Implementar CI/CD con GitHub Actions** (ver arquitectura propuesta en [`ARCHITECTURE.md`](ARCHITECTURE.md))
 4. ✅ **Agregar autenticación/autorización** con Microsoft Entra ID (Azure AD)
 5. ✅ **Implementar caché** (Redis) para respuestas frecuentes
 6. ✅ **Agregar más modelos de análisis** (Azure Text Analytics, custom models)
+7. ✅ **Optimizar queries KQL** para mejor performance de KEDA
+8. ✅ **Configurar múltiples reglas de scaling** (HTTP + Log Analytics) para escalado híbrido
 
 ---
 

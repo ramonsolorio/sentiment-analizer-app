@@ -1,14 +1,12 @@
-# 📊 Escalado Inteligente con Application Insights y Azure Container Apps
+# 📊 Escalado Inteligente con Log Analytics, KEDA y Azure Container Apps
 
-## ⚠️ Limitación Actual de KEDA con App Insights
+## ✅ Solución Implementada: KEDA con Log Analytics
 
-**Importante**: KEDA (usado por Azure Container Apps) **NO soporta directamente** escalado basado en métricas personalizadas de Application Insights.
-
-Sin embargo, podemos lograr el objetivo usando **Azure Monitor y HTTP scaling** combinado con telemetría de App Insights.
+**Importante**: La aplicación ahora utiliza **KEDA (Kubernetes Event Driven Autoscaling)** con el **Azure Log Analytics Scaler** para escalado basado en eventos de sentimientos negativos.
 
 ---
 
-## 🎯 Solución Implementada: Escalado basado en HTTP + Telemetría
+## 🎯 Solución Implementada: Escalado basado en Eventos + Telemetría
 
 ### Arquitectura
 
@@ -16,18 +14,23 @@ Sin embargo, podemos lograr el objetivo usando **Azure Monitor y HTTP scaling** 
 Usuario → Frontend → Backend (ACA) → Azure OpenAI
                          ↓
                  Application Insights
-                    (registra todo)
+                    (registra eventos)
                          ↓
-                   ┌─────────────┐
-                   │ Métricas:   │
-                   │ - Requests  │
-                   │ - Negative  │
-                   │ - Duration  │
-                   └─────────────┘
+                 Log Analytics Workspace
+                    (almacena eventos)
+                         ↓
+                   ┌─────────────────┐
+                   │ KEDA Scaler     │
+                   │ Poll cada 30s   │
+                   │ Query KQL:      │
+                   │ Count negative  │
+                   │ events (5 min)  │
+                   └─────────────────┘
                          ↓
          ┌────────────────────────────┐
-         │ ACA Scaling Rule (HTTP)    │
-         │ - Concurrent requests: 5   │
+         │ ACA Scaling Decision       │
+         │ - ≥ 5 eventos → Scale UP   │
+         │ - < 5 eventos → Scale DOWN │
          │ - Min replicas: 1          │
          │ - Max replicas: 10         │
          └────────────────────────────┘
@@ -35,10 +38,15 @@ Usuario → Frontend → Backend (ACA) → Azure OpenAI
 
 ### Cómo Funciona
 
-1. **Usuario envía requests** con textos negativos
-2. **Backend analiza** y envía telemetría a App Insights con `NegativeSentimentCount`
-3. **ACA escala automáticamente** cuando hay > 5 requests concurrentes
-4. **App Insights monitorea** y podemos ver la correlación entre sentimientos negativos y escalado
+1. **Usuario envía requests** con textos que contienen diferentes sentimientos
+2. **Backend analiza** con Azure OpenAI y detecta sentimientos (Positive, Negative, Neutral)
+3. **Backend envía eventos** a Application Insights con `SentimentAnalyzed` event
+4. **Application Insights almacena** eventos en Log Analytics Workspace
+5. **KEDA consulta Log Analytics** cada 30 segundos con query KQL
+6. **Query cuenta eventos negativos** en los últimos 5 minutos
+7. **Si count ≥ 5**: KEDA indica a ACA que escale UP (agregar réplica)
+8. **Si count < 5 durante 5 min**: KEDA indica a ACA que escale DOWN (remover réplica)
+9. **Application Insights monitorea** toda la telemetría para observabilidad
 
 ---
 
