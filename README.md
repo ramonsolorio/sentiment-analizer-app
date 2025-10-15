@@ -48,9 +48,7 @@ Usuario → Frontend (ACA) → Backend (ACA) → Azure OpenAI
 ## 🌐 URLs de la Aplicación
 
 ### Producción (Azure Container Apps)
-- **Frontend**: `https://academosampl1.braveflower-b755a572.centralus.azurecontainerapps.io`
-- **Backend API**: `https://sentiment-analyzer-backend-aca.braveflower-b755a572.centralus.azurecontainerapps.io`
-
+- ** Validar despues de desplegar en Azure
 ### Desarrollo Local
 - **Frontend**: `http://localhost:4200`
 - **Backend API**: `http://localhost:5000`
