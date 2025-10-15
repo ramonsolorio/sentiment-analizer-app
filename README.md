@@ -21,15 +21,32 @@ Para ver los diagramas detallados de la arquitectura, flujos de datos, y compone
 👉 **[ARCHITECTURE.md](ARCHITECTURE.md)** - Incluye 10+ diagramas Mermaid interactivos
 
 **Vista Rápida:**
-```
-Usuario → Frontend (ACA) → Backend (ACA) → Azure OpenAI
-                              ↓
-                    Application Insights
-                              ↓
-                    Log Analytics Workspace
-                              ↓
-                    KEDA Log Analytics Scaler
-                    (Escala cuando negativos ≥ 5)
+
+```mermaid
+graph TB
+    User[👤 Usuario]
+    Frontend[🎨 Frontend<br/>Angular 12 + Nginx<br/>Azure Container Apps]
+    Backend[⚙️ Backend<br/>ASP.NET Core 8<br/>Azure Container Apps]
+    OpenAI[🤖 Azure OpenAI<br/>GPT-4o]
+    AppInsights[📊 Application Insights<br/>Telemetría & Métricas]
+    LogAnalytics[📈 Log Analytics<br/>Workspace]
+    KEDA[🔄 KEDA Scaler<br/>Log Analytics Trigger<br/>negativos ≥ 5]
+    
+    User -->|HTTP Request| Frontend
+    Frontend -->|API Call| Backend
+    Backend -->|Sentiment Analysis| OpenAI
+    Backend -->|Telemetría| AppInsights
+    AppInsights -->|Custom Events & Metrics| LogAnalytics
+    LogAnalytics -->|Query KQL<br/>Negative Count| KEDA
+    KEDA -->|Scale Replicas<br/>1-10 instances| Backend
+    
+    style User fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style Frontend fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Backend fill:#FF6B6B,stroke:#CC5555,stroke-width:2px,color:#fff
+    style OpenAI fill:#9B59B6,stroke:#7D3C98,stroke-width:2px,color:#fff
+    style AppInsights fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff
+    style LogAnalytics fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    style KEDA fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
 ```
 
 ## 📋 Prerrequisitos
